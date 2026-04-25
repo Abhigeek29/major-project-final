@@ -2,52 +2,57 @@ import axios from "axios"
 const geminiResponse=async (command,assistantName,userName)=>{
 try {
     const apiUrl=process.env.GEMINI_API_URL
-    const prompt = `You are a virtual assistant named ${assistantName} created by ${userName}. 
-You are not Google. You will now behave like a voice-enabled assistant.
+    const prompt = `
+You are ${assistantName}, a virtual assistant created by ${userName}.
 
-Your task is to understand the user's natural language input and respond with a JSON object like this:
-
+Respond ONLY in valid JSON format:
 {
-  "type": "general" | "google-search" | "youtube-search" | "youtube-play" | "get-time" | "get-date" | "get-day" | "get-month"|"calculator-open" | "instagram-open" |"facebook-open" |"weather-show"
-  ,
-  "userInput": "<original user input>" {only remove your name from userinput if exists} and agar kisi ne google ya youtube pe kuch search karne ko bola hai to userInput me only bo search baala text jaye,
-
-  "response": "<a short spoken response to read out loud to the user>"
+  "type": "general | google-search | youtube-search | youtube-play | get-time | get-date",
+  "userInput": "...",
+  "response": "..."
 }
 
-Instructions:
-- "type": determine the intent of the user.
-- "userinput": original sentence the user spoke.
-- "response": A short voice-friendly reply, e.g., "Sure, playing it now", "Here's what I found", "Today is Tuesday", etc.
-
-Type meanings:
-- "general": if it's a factual or informational question. aur agar koi aisa question puchta hai jiska answer tume pata hai usko bhi general ki category me rakho bas short answer dena
-- "google-search": if user wants to search something on Google .
-- "youtube-search": if user wants to search something on YouTube.
-- "youtube-play": if user wants to directly play a video or song.
-- "calculator-open": if user wants to  open a calculator .
-- "instagram-open": if user wants to  open instagram .
-- "facebook-open": if user wants to open facebook.
--"weather-show": if user wants to know weather
-- "get-time": if user asks for current time.
-- "get-date": if user asks for today's date.
-- "get-day": if user asks what day it is.
-- "get-month": if user asks for the current month.
-
-Important:
-- Use ${userName} agar koi puche tume kisne banaya 
-Only respond in valid JSON format.
-- Do NOT include markdown like backticks or code blocks
-Do NOT include any explanation.
-Your response must be directly parsable using JSON.parse().
-
-
-now your userInput- ${command}
+User: ${command}
 `;
 
 
 
+    // const apiUrl = process.env.GEMINI_API_URL;
 
+// 🔥 TEMP AI WITH PROPER CONTEXT HANDLING
+
+let responseText = "Got it.";
+
+const lower = command.toLowerCase();
+
+// 🔥 Extract ONLY current question (last line)
+const currentLine = command.split("Current question:").pop().trim();
+
+// 🔥 1. Handle name question
+if (currentLine.includes("what is my name")) {
+  const prevNameMatch = command.match(/my name is (\w+)/i);
+
+  if (prevNameMatch) {
+    responseText = `Your name is ${prevNameMatch[1]}`;
+  } else {
+    responseText = "You told me your name earlier.";
+  }
+}
+
+// 🔥 2. Handle introduction (ONLY if current line has it)
+else if (/my name is (\w+)/i.test(currentLine)) {
+  const nameMatch = currentLine.match(/my name is (\w+)/i);
+  responseText = `Nice to meet you, ${nameMatch[1]}`;
+}
+
+return {
+  type: "general",
+  userInput: command,
+  response: responseText
+};
+
+// // ❌ this part will not run now
+// const result = await axios.post(apiUrl,{
 
     const result=await axios.post(apiUrl,{
     "contents": [{

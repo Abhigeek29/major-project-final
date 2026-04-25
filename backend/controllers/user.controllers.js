@@ -52,15 +52,33 @@ export const askToAssistant = async (req, res) => {
 
     const user = await User.findById(req.userId);
 
-    user.history.push(command);
+    user.history = user.history.map(item => {
+      if (item.startsWith("User:") || item.startsWith("Assistant:")) {
+        return item;
+      }
+      return `User: ${item}`;
+    });
+
+    user.history.push(`User: ${command}`);
     await user.save();
+    console.log("HISTORY:", user.history);
 
     const userName = user.name;
     const assistantName = user.assistantName;
 
-    // ✅ gemini now returns JSON directly
+    // 🔥 RAG: CONTEXT
+    const context = user.history.slice(-5).join("\n");
+
+    const enhancedCommand = `
+Previous conversation:
+${context}
+
+Current question:
+${command}
+`;
+
     const gemResult = await geminiResponse(
-      command,
+      enhancedCommand,
       assistantName,
       userName
     );
@@ -68,33 +86,62 @@ export const askToAssistant = async (req, res) => {
     const type = gemResult.type;
 
     switch (type) {
-      case "get-date":
-        return res.json({
-          type,
-          userInput: gemResult.userInput,
-          response: `current date is ${moment().format("YYYY-MM-DD")}`,
-        });
+      case "get-date": {
+        const responseText = `current date is ${moment().format("YYYY-MM-DD")}`;
 
-      case "get-time":
-        return res.json({
-          type,
-          userInput: gemResult.userInput,
-          response: `current time is ${moment().format("hh:mm A")}`,
-        });
+        // 🔥 AVOID STORING DEBUG / CONTEXT
+        const cleanResponse = gemResult.response.includes("DEBUG")
+          ? "Temporary response"
+          : gemResult.response;
 
-      case "get-day":
-        return res.json({
-          type,
-          userInput: gemResult.userInput,
-          response: `today is ${moment().format("dddd")}`,
-        });
+        user.history.push(`Assistant: ${cleanResponse}`);
+        await user.save();
 
-      case "get-month":
         return res.json({
           type,
           userInput: gemResult.userInput,
-          response: `this month is ${moment().format("MMMM")}`,
+          response: responseText,
         });
+      }
+
+      case "get-time": {
+        const responseText = `current time is ${moment().format("hh:mm A")}`;
+
+        user.history.push(`Assistant: ${responseText}`);
+        await user.save();
+
+        return res.json({
+          type,
+          userInput: gemResult.userInput,
+          response: responseText,
+        });
+      }
+
+      case "get-day": {
+        const responseText = `today is ${moment().format("dddd")}`;
+
+        user.history.push(`Assistant: ${responseText}`);
+        await user.save();
+
+        return res.json({
+          type,
+          userInput: gemResult.userInput,
+          response: responseText,
+        });
+      }
+
+      case "get-month": {
+        const responseText = `this month is ${moment().format("MMMM")}`;
+
+        user.history.push(`Assistant: ${responseText}`);
+        await user.save();
+
+        return res.json({
+          type,
+          userInput: gemResult.userInput,
+          response: responseText,
+        });
+      }
 
       case "google-search":
       case "youtube-search":
@@ -104,6 +151,15 @@ export const askToAssistant = async (req, res) => {
       case "instagram-open":
       case "facebook-open":
       case "weather-show":
+
+        // 🔥 AVOID STORING DEBUG / CONTEXT (FIX APPLIED HERE)
+        const cleanResponse = gemResult.response.includes("DEBUG")
+          ? "Temporary response"
+          : gemResult.response;
+
+        user.history.push(`Assistant: ${cleanResponse}`);
+        await user.save();
+
         return res.json({
           type,
           userInput: gemResult.userInput,
