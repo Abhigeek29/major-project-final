@@ -14,23 +14,35 @@ function SignIn() {
     const [password,setPassword]=useState("")
 const [err,setErr]=useState("")
   const handleSignIn=async (e)=>{
-    e.preventDefault()
-    setErr("")
-    setLoading(true)
-try {
-  let result=await axios.post(`${serverUrl}/api/auth/signin`,{
-   email,password
-  },{withCredentials:true} )
- setUserData(result.data)
-  setLoading(false)
-   navigate("/")
-} catch (error) {
-  console.log(error)
-  setUserData(null)
-  setLoading(false)
-  setErr(error.response.data.message)
-}
+  e.preventDefault()
+  setErr("")
+  setLoading(true)
+
+  console.log("👉 Sending login request");
+
+  try {
+    let result=await axios.post(`${serverUrl}/api/auth/signin`,{
+      email,password
+    },{withCredentials:true})
+
+    console.log("✅ LOGIN RESPONSE:", result);
+
+    setUserData(result.data)
+    setLoading(false)
+    navigate("/")
+  } catch (error) {
+    console.log("❌ LOGIN ERROR:", error);
+
+    setUserData(null)
+    setLoading(false)
+
+    if(error.response){
+      setErr(error.response.data.message)
+    } else {
+      setErr("Server not responding")
     }
+  }
+}
   return (
     <div className='w-full h-[100vh] bg-cover flex justify-center items-center' style={{backgroundImage:`url(${bg})`}} >
  <form className='w-[90%] h-[600px] max-w-[500px] bg-[#00000062] backdrop-blur shadow-lg shadow-black flex flex-col items-center justify-center gap-[20px] px-[20px]' onSubmit={handleSignIn}>

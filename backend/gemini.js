@@ -36,7 +36,10 @@ Type meanings:
 
 Important:
 - Use ${userName} agar koi puche tume kisne banaya 
-- Only respond with the JSON object, nothing else.
+Only respond in valid JSON format.
+- Do NOT include markdown like backticks or code blocks
+Do NOT include any explanation.
+Your response must be directly parsable using JSON.parse().
 
 
 now your userInput- ${command}
@@ -51,9 +54,41 @@ now your userInput- ${command}
     "parts":[{"text": prompt}]
     }]
     })
-return result.data.candidates[0].content.parts[0].text
-} catch (error) {
-    console.log(error)
+const raw = result.data.candidates[0].content.parts[0].text;
+
+console.log("RAW GEMINI:", raw); // debug
+
+let cleaned = raw.trim();
+
+// remove ```json and ```
+if (cleaned.startsWith("```")) {
+  cleaned = cleaned.replace(/```json|```/g, "").trim();
+}
+
+let parsed;
+
+try {
+  parsed = JSON.parse(cleaned);
+} catch (err) {
+  console.log("❌ JSON PARSE FAILED:", cleaned);
+
+  parsed = {
+    type: "general",
+    userInput: command,
+    response: cleaned
+  };
+}
+
+return parsed;
+} 
+catch (error) {
+  console.log("GEMINI ERROR:", error);
+
+  return {
+    type: "general",
+    userInput: command,
+    response: "Sorry, something went wrong."
+  };
 }
 }
 

@@ -17,14 +17,28 @@ function UserContext({children}) {
         }
     }
 
-    const getGeminiResponse=async (command)=>{
-try {
-  const result=await axios.post(`${serverUrl}/api/user/asktoassistant`,{command},{withCredentials:true})
-  return result.data
-} catch (error) {
-  console.log(error)
-}
-    }
+   const getGeminiResponse = async (command) => {
+  try {
+    const result = await axios.post(
+      `${serverUrl}/api/user/asktoassistant`,
+      { command },
+      { withCredentials: true }
+    );
+
+    console.log("Backend result:", result.data); // debug
+
+    return result.data; // ✅ correct
+  } catch (error) {
+    console.log("API ERROR:", error);
+
+    // ✅ VERY IMPORTANT fallback
+    return {
+      type: "general",
+      userInput: command,
+      response: "Sorry, something went wrong.",
+    };
+  }
+};
 
     useEffect(()=>{
 handleCurrentUser()

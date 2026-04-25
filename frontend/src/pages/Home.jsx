@@ -12,6 +12,8 @@ function Home() {
   const [listening,setListening]=useState(false)
   const [userText,setUserText]=useState("")
   const [aiText,setAiText]=useState("")
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
   const isSpeakingRef=useRef(false)
   const recognitionRef=useRef(null)
   const [ham,setHam]=useState(false)
@@ -94,6 +96,32 @@ synth.speak(utterence);
     }
 
   }
+  const sendMessage = async () => {
+  if (!chatInput.trim()) return;
+
+  // show user message
+  const userMsg = { sender: "user", text: chatInput };
+  setChatHistory((prev) => [...prev, userMsg]);
+
+  try {
+    console.log("Sending:", chatInput);
+
+    const data = await getGeminiResponse(chatInput);
+
+    console.log("Response:", data);
+
+    // show bot response
+    const botMsg = { sender: "bot", text: data.response };
+    setChatHistory((prev) => [...prev, botMsg]);
+
+    // reuse your existing logic (VERY IMPORTANT)
+    handleCommand(data);
+
+    setChatInput("");
+  } catch (error) {
+    console.error("Chat error:", error);
+  }
+};
 
 useEffect(() => {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -224,7 +252,39 @@ useEffect(() => {
       {aiText && <img src={aiImg} alt="" className='w-[200px]'/>}
     
     <h1 className='text-white text-[18px] font-semibold text-wrap'>{userText?userText:aiText?aiText:null}</h1>
-      
+    {/* 🔥 CHAT UI START */}
+<div className="w-full max-w-[500px] mt-[20px] bg-[#ffffff10] p-[10px] rounded-lg">
+
+  {/* Chat History */}
+  <div className="h-[150px] overflow-y-auto flex flex-col gap-[5px] mb-[10px]">
+    {chatHistory.map((msg, index) => (
+      <div key={index} className="text-white text-[14px]">
+        <strong>{msg.sender === "user" ? "You" : "AI"}:</strong> {msg.text}
+      </div>
+    ))}
+  </div>
+
+  {/* Input + Button */}
+  <div className="flex gap-[10px]">
+    <input
+      value={chatInput}
+      onChange={(e) => setChatInput(e.target.value)}
+      placeholder="Type message..."
+      className="flex-1 p-[8px] rounded bg-black text-white outline-none"
+      onKeyDown={(e) => {
+        if (e.key === "Enter") sendMessage();
+      }}
+    />
+
+    <button
+      onClick={sendMessage}
+      className="bg-white text-black px-[10px] rounded"
+    >
+      Send
+    </button>
+  </div>
+</div>
+{/* 🔥 CHAT UI END */}
     </div>
   )
 }
