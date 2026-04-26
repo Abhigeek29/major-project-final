@@ -14,6 +14,8 @@ function Home() {
   const [aiText,setAiText]=useState("")
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
+  const [mode, setMode] = useState("voice"); // 🔥 ADD THIS
+  console.log("MODE:", mode);
   const isSpeakingRef=useRef(false)
   const recognitionRef=useRef(null)
   const [ham,setHam]=useState(false)
@@ -137,17 +139,23 @@ useEffect(() => {
 
   // Start recognition after 1 second delay only if component still mounted
   const startTimeout = setTimeout(() => {
-    if (isMounted && !isSpeakingRef.current && !isRecognizingRef.current) {
-      try {
-        recognition.start();
-        console.log("Recognition requested to start");
-      } catch (e) {
-        if (e.name !== "InvalidStateError") {
-          console.error(e);
-        }
+  // 🔥 ONLY START IN VOICE MODE
+  if (
+    isMounted &&
+    mode === "voice" &&
+    !isSpeakingRef.current &&
+    !isRecognizingRef.current
+  ) {
+    try {
+      recognition.start();
+      console.log("Recognition requested to start");
+    } catch (e) {
+      if (e.name !== "InvalidStateError") {
+        console.error(e);
       }
     }
-  }, 1000);
+  }
+}, 1000);
 
   recognition.onstart = () => {
     isRecognizingRef.current = true;
@@ -155,27 +163,31 @@ useEffect(() => {
   };
 
   recognition.onend = () => {
-    isRecognizingRef.current = false;
-    setListening(false);
-    if (isMounted && !isSpeakingRef.current) {
-      setTimeout(() => {
-        if (isMounted) {
-          try {
-            recognition.start();
-            console.log("Recognition restarted");
-          } catch (e) {
-            if (e.name !== "InvalidStateError") console.error(e);
-          }
+  isRecognizingRef.current = false;
+  setListening(false);
+
+  // 🔥 STOP MIC IN CHAT MODE
+  if (mode === "chat") return;
+
+  if (isMounted && !isSpeakingRef.current) {
+    setTimeout(() => {
+      if (isMounted && mode === "voice") {
+        try {
+          recognition.start();
+          console.log("Recognition restarted");
+        } catch (e) {
+          if (e.name !== "InvalidStateError") console.error(e);
         }
-      }, 1000);
-    }
-  };
+      }
+    }, 1000);
+  }
+};
 
   recognition.onerror = (event) => {
     console.warn("Recognition error:", event.error);
     isRecognizingRef.current = false;
     setListening(false);
-    if (event.error !== "aborted" && isMounted && !isSpeakingRef.current) {
+    if (event.error !== "aborted" && isMounted && !isSpeakingRef.current && mode === "voice") {
       setTimeout(() => {
         if (isMounted) {
           try {
@@ -218,13 +230,29 @@ useEffect(() => {
     setListening(false);
     isRecognizingRef.current = false;
   };
-}, []);
+}, [mode]);
 
 
 
 
   return (
     <div className='w-full h-[100vh] bg-gradient-to-t from-[black] to-[#02023d] flex justify-center items-center flex-col gap-[15px] overflow-hidden'>
+      {/* 🔥 ONLY ADDITION */}
+      <div className="w-full flex justify-center gap-4 mb-4">
+        <button
+          onClick={() => setMode("voice")}
+          className={`px-4 py-2 rounded-full ${mode === "voice" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+        >
+          🎤 Voice
+        </button>
+
+        <button
+          onClick={() => setMode("chat")}
+          className={`px-4 py-2 rounded-full ${mode === "chat" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+        >
+          💬 Chat
+        </button>
+      </div>
       <CgMenuRight className='lg:hidden text-white absolute top-[20px] right-[20px] w-[25px] h-[25px]' onClick={()=>setHam(true)}/>
       <div className={`absolute lg:hidden top-0 w-full h-full bg-[#00000053] backdrop-blur-lg p-[20px] flex flex-col gap-[20px] items-start ${ham?"translate-x-0":"translate-x-full"} transition-transform`}>
  <RxCross1 className=' text-white absolute top-[20px] right-[20px] w-[25px] h-[25px]' onClick={()=>setHam(false)}/>
@@ -253,37 +281,40 @@ useEffect(() => {
     
     <h1 className='text-white text-[18px] font-semibold text-wrap'>{userText?userText:aiText?aiText:null}</h1>
     {/* 🔥 CHAT UI START */}
-<div className="w-full max-w-[500px] mt-[20px] bg-[#ffffff10] p-[10px] rounded-lg">
+{mode === "chat" && (
+  <div className="w-full max-w-[500px] mt-[20px] bg-[#ffffff10] p-[10px] rounded-lg">
 
-  {/* Chat History */}
-  <div className="h-[150px] overflow-y-auto flex flex-col gap-[5px] mb-[10px]">
-    {chatHistory.map((msg, index) => (
-      <div key={index} className="text-white text-[14px]">
-        <strong>{msg.sender === "user" ? "You" : "AI"}:</strong> {msg.text}
-      </div>
-    ))}
+    {/* Chat History */}
+    <div className="h-[150px] overflow-y-auto flex flex-col gap-[5px] mb-[10px]">
+      {chatHistory.map((msg, index) => (
+        <div key={index} className="text-white text-[14px]">
+          <strong>{msg.sender === "user" ? "You" : "AI"}:</strong> {msg.text}
+        </div>
+      ))}
+    </div>
+
+    {/* Input + Button */}
+    <div className="flex gap-[10px]">
+      <input
+        value={chatInput}
+        onChange={(e) => setChatInput(e.target.value)}
+        placeholder="Type message..."
+        className="flex-1 p-[8px] rounded bg-black text-white outline-none"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") sendMessage();
+        }}
+      />
+
+      <button
+        onClick={sendMessage}
+        className="bg-white text-black px-[10px] rounded"
+      >
+        Send
+      </button>
+    </div>
+
   </div>
-
-  {/* Input + Button */}
-  <div className="flex gap-[10px]">
-    <input
-      value={chatInput}
-      onChange={(e) => setChatInput(e.target.value)}
-      placeholder="Type message..."
-      className="flex-1 p-[8px] rounded bg-black text-white outline-none"
-      onKeyDown={(e) => {
-        if (e.key === "Enter") sendMessage();
-      }}
-    />
-
-    <button
-      onClick={sendMessage}
-      className="bg-white text-black px-[10px] rounded"
-    >
-      Send
-    </button>
-  </div>
-</div>
+)}
 {/* 🔥 CHAT UI END */}
     </div>
   )
