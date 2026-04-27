@@ -19,37 +19,37 @@ User: ${command}
 
     // const apiUrl = process.env.GEMINI_API_URL;
 
-// 🔥 TEMP AI WITH PROPER CONTEXT HANDLING
+// // 🔥 TEMP AI WITH PROPER CONTEXT HANDLING
 
-let responseText = "Got it.";
+// let responseText = "Got it.";
 
-const lower = command.toLowerCase();
+// const lower = command.toLowerCase();
 
-// 🔥 Extract ONLY current question (last line)
-const currentLine = command.split("Current question:").pop().trim();
+// // 🔥 Extract ONLY current question (last line)
+// const currentLine = command.split("Current question:").pop().trim();
 
-// 🔥 1. Handle name question
-if (currentLine.includes("what is my name")) {
-  const prevNameMatch = command.match(/my name is (\w+)/i);
+// // 🔥 1. Handle name question
+// if (currentLine.includes("what is my name")) {
+//   const prevNameMatch = command.match(/my name is (\w+)/i);
 
-  if (prevNameMatch) {
-    responseText = `Your name is ${prevNameMatch[1]}`;
-  } else {
-    responseText = "You told me your name earlier.";
-  }
-}
+//   if (prevNameMatch) {
+//     responseText = `Your name is ${prevNameMatch[1]}`;
+//   } else {
+//     responseText = "You told me your name earlier.";
+//   }
+// }
 
-// 🔥 2. Handle introduction (ONLY if current line has it)
-else if (/my name is (\w+)/i.test(currentLine)) {
-  const nameMatch = currentLine.match(/my name is (\w+)/i);
-  responseText = `Nice to meet you, ${nameMatch[1]}`;
-}
+// // 🔥 2. Handle introduction (ONLY if current line has it)
+// else if (/my name is (\w+)/i.test(currentLine)) {
+//   const nameMatch = currentLine.match(/my name is (\w+)/i);
+//   responseText = `Nice to meet you, ${nameMatch[1]}`;
+// }
 
-return {
-  type: "general",
-  userInput: command,
-  response: responseText
-};
+// return {
+//   type: "general",
+//   userInput: command,
+//   response: responseText
+// };
 
 // // ❌ this part will not run now
 // const result = await axios.post(apiUrl,{
@@ -77,10 +77,19 @@ try {
 } catch (err) {
   console.log("❌ JSON PARSE FAILED:", cleaned);
 
-  parsed = {
-    type: "general",
-    userInput: command,
-    response: cleaned
+  const badShortResponses = ["got it", "okay", "ok", "sure"];
+
+const isBadShort =
+  badShortResponses.some(word =>
+    cleaned.toLowerCase().includes(word)
+  );
+
+parsed = {
+  type: "general",
+  userInput: command,
+  response: isBadShort
+    ? "Alright, what would you like me to do?"
+    : cleaned
   };
 }
 

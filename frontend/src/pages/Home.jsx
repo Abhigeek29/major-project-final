@@ -72,11 +72,12 @@ synth.speak(utterence);
 
   const handleCommand=(data)=>{
     const {type,userInput,response}=data
-      speak(response);
+      console.log("EXECUTING TYPE:", type);
+      // speak(response);
     
     if (type === 'google-search') {
       const query = encodeURIComponent(userInput);
-      window.open(`https://www.google.com/search?q=${query}`, '_blank');
+      window.location.href = `https://www.google.com/search?q=${query}`;
     }
      if (type === 'calculator-open') {
   
@@ -94,7 +95,7 @@ synth.speak(utterence);
 
     if (type === 'youtube-search' || type === 'youtube-play') {
       const query = encodeURIComponent(userInput);
-      window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+      window.location.href = `https://www.youtube.com/results?search_query=${query}`;
     }
 
   }
@@ -109,8 +110,9 @@ synth.speak(utterence);
     console.log("Sending:", chatInput);
 
     const data = await getGeminiResponse(chatInput);
-
+    console.log("AI RESPONSE:", data);
     console.log("Response:", data);
+    console.log("AI RESPONSE:", data);
 
     // show bot response
     const botMsg = { sender: "bot", text: data.response };
