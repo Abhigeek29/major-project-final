@@ -135,7 +135,43 @@ if (gemResult.userInput.includes("Current question:")) {
 if (!gemResult.type || typeof gemResult.type !== "string") {
   gemResult.type = "general";
 }
-    const type = gemResult.type;
+    let type = gemResult.type;
+
+// handle cases like "general|youtube-play"
+if (type.includes("|")) {
+  const parts = type.split("|").map(t => t.trim());
+
+  if (parts.includes("youtube-play")) type = "youtube-play";
+  else if (parts.includes("youtube-search")) type = "youtube-search";
+  else if (parts.includes("google-search")) type = "google-search";
+  else if (parts.includes("facebook-open")) type = "facebook-open";
+  else if (parts.includes("instagram-open")) type = "instagram-open";
+  else type = parts[0];
+}
+
+// final safety
+if (!type || typeof type !== "string") {
+  type = "general";
+}
+
+// 🔥 FIX 2: COMMAND OVERRIDE (IMMEDIATELY AFTER FIX 1)
+const lowerCommand = command.toLowerCase();
+
+if (lowerCommand.includes("youtube")) {
+  type = "youtube-search";
+} else if (lowerCommand.includes("google") || lowerCommand.includes("search")) {
+  type = "google-search";
+} else if (lowerCommand.includes("facebook")) {
+  type = "facebook-open";
+} else if (lowerCommand.includes("instagram")) {
+  type = "instagram-open";
+} else if (lowerCommand.includes("linkedin")) {
+  type = "linkedin-open";
+} else if (lowerCommand.includes("calculator")) {
+  type = "calculator-open";
+} else if (lowerCommand.includes("weather")) {
+  type = "weather-show";
+}
 
     switch (type) {
       case "get-date": {
@@ -216,6 +252,7 @@ if (!isBad) {
       case "calculator-open":
       case "instagram-open":
       case "facebook-open":
+      case "linkedin-open":
       case "weather-show":
 
         // 🔥 AVOID STORING DEBUG / CONTEXT (FIX APPLIED HERE)

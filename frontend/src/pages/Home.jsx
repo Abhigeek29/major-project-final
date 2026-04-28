@@ -70,35 +70,59 @@ function Home() {
 synth.speak(utterence);
   }
 
-  const handleCommand=(data)=>{
-    const {type,userInput,response}=data
-      console.log("EXECUTING TYPE:", type);
-      // speak(response);
-    
-    if (type === 'google-search') {
-      const query = encodeURIComponent(userInput);
-      window.location.href = `https://www.google.com/search?q=${query}`;
-    }
-     if (type === 'calculator-open') {
-  
-      window.open(`https://www.google.com/search?q=calculator`, '_blank');
-    }
-     if (type === "instagram-open") {
-      window.open(`https://www.instagram.com/`, '_blank');
-    }
-    if (type ==="facebook-open") {
-      window.open(`https://www.facebook.com/`, '_blank');
-    }
-     if (type ==="weather-show") {
-      window.open(`https://www.google.com/search?q=weather`, '_blank');
-    }
+const handleCommand = (data, originalInput = "") => {
+  const { type, userInput, response } = data;
 
-    if (type === 'youtube-search' || type === 'youtube-play') {
-      const query = encodeURIComponent(userInput);
-      window.location.href = `https://www.youtube.com/results?search_query=${query}`;
-    }
+  console.log("EXECUTING TYPE:", type);
 
+  const combined = (
+  (userInput || "") + " " + (originalInput || "")
+).toLowerCase();
+
+  // 🔥 GOOGLE
+  if (type === 'google-search' || combined.includes("google") || combined.includes("search")) {
+    const query = encodeURIComponent(userInput || chatInput);
+    window.location.href = `https://www.google.com/search?q=${query}`;
+    return;
   }
+
+  // 🔥 YOUTUBE
+  if (type === 'youtube-search' || type === 'youtube-play' || combined.includes("youtube")) {
+    const query = encodeURIComponent(userInput || chatInput);
+    window.location.href = `https://www.youtube.com/results?search_query=${query}`;
+    return;
+  }
+
+  // 🔥 FACEBOOK (THIS WILL FIX YOUR ISSUE)
+  if (type === "facebook-open" || combined.includes("facebook")) {
+    window.open(`https://www.facebook.com/`, '_blank');
+    return;
+  }
+
+  // 🔥 INSTAGRAM
+  if (type === "instagram-open" || combined.includes("instagram")) {
+    window.open(`https://www.instagram.com/`, '_blank');
+    return;
+  }
+
+  // 🔥 LINKEDIN
+if (type === "linkedin-open" || combined.includes("linkedin")) {
+  window.open(`https://www.linkedin.com/`, '_blank');
+  return;
+}
+
+  // 🔥 CALCULATOR
+  if (type === 'calculator-open' || combined.includes("calculator")) {
+    window.open(`https://www.google.com/search?q=calculator`, '_blank');
+    return;
+  }
+
+  // 🔥 WEATHER
+  if (type === "weather-show" || combined.includes("weather")) {
+    window.open(`https://www.google.com/search?q=weather`, '_blank');
+    return;
+  }
+};
   const sendMessage = async () => {
   if (!chatInput.trim()) return;
 
@@ -119,7 +143,7 @@ synth.speak(utterence);
     setChatHistory((prev) => [...prev, botMsg]);
 
     // reuse your existing logic (VERY IMPORTANT)
-    handleCommand(data);
+    handleCommand(data, chatInput);
 
     setChatInput("");
   } catch (error) {
